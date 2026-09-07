@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>요일조합 항공권 탐색기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0e1117;
+    --panel: #171b24;
+    --panel-2: #1f2430;
+    --border: #2a2f3d;
+    --text: #e8e6df;
+    --text-dim: #8b8f9c;
+    --amber: #f5a623;
+    --amber-dim: #3a2c10;
+    --green: #3ddc84;
+    --green-dim: #123322;
+  }
+  *{ box-sizing: border-box; }
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    min-height:100vh; padding:24px 16px 60px;
+  }
+  .wrap{ max-width:480px; margin:0 auto; }
+  header{ margin-bottom:20px; }
+  .eyebrow{ font-family:'JetBrains Mono', monospace; font-size:12px; color:var(--amber); letter-spacing:1px; }
+  h1{ font-size:22px; font-weight:600; margin:6px 0 0; }
+  .sub{ color:var(--text-dim); font-size:14px; margin-top:8px; line-height:1.6; }
+
+  .card{ background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:16px; margin-bottom:14px; }
+  .row{ display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+  .row:last-child{ margin-bottom:0; }
+  label.field-label{ font-size:13px; color:var(--text-dim); min-width:64px; flex-shrink:0; }
+
+  select, input[type=text]{
+    background:var(--panel-2); border:1px solid var(--border); color:var(--text);
+    border-radius:6px; padding:9px 10px; font-size:14px; font-family:inherit; flex:1; width:100%;
+  }
+  .dow-group{ display:flex; gap:4px; flex:1; }
+  .dow-btn{
+    flex:1; padding:8px 0; text-align:center; background:var(--panel-2); border:1px solid var(--border);
+    color:var(--text-dim); border-radius:6px; font-size:13px; font-family:'JetBrains Mono', monospace;
+    cursor:pointer; user-select:none;
+  }
+  .dow-btn.on{ background:var(--amber-dim); border-color:var(--amber); color:var(--amber); font-weight:700; }
+  .nights-note{ font-size:12px; color:var(--text-dim); text-align:right; margin-top:8px; }
+
+  input[type=range]{ flex:1; accent-color:var(--amber); }
+  .weeks-val{ font-family:'JetBrains Mono', monospace; font-size:13px; min-width:40px; text-align:right; }
+
+  .gen-btn{
+    width:100%; padding:13px; background:var(--amber); color:#1a1204; border:none; border-radius:8px;
+    font-size:15px; font-weight:700; cursor:pointer; font-family:inherit; margin-top:6px;
+  }
+  .gen-btn:active{ transform:scale(0.98); }
+
+  table{ width:100%; border-collapse:collapse; }
+  th{ text-align:left; font-size:11px; color:var(--text-dim); font-weight:400; padding:6px 4px; border-bottom:1px solid var(--border); }
+  td{ padding:9px 4px; border-bottom:1px solid var(--border); font-size:13px; vertical-align:middle; }
+  .date-cell{ font-family:'JetBrains Mono', monospace; }
+  .open-link{ color:var(--amber); text-decoration:none; font-family:'JetBrains Mono', monospace; font-size:12px; }
+  .price-input{
+    width:100%; background:var(--panel-2); border:1px solid var(--border); color:var(--text);
+    border-radius:6px; padding:7px 8px; font-family:'JetBrains Mono', monospace; font-size:13px;
+  }
+  tr.cheapest td{ background:var(--green-dim); }
+  tr.cheapest .price-input{ border-color:var(--green); color:var(--green); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">ICN DEPARTURES</div>
+    <h1>요일조합 항공권 탐색기</h1>
+    <p class="sub">출발/복귀 요일을 직접 고르면 앞으로 몇 주 치 네이버항공권 검색 링크를 만들어드려요. 링크에서 눈으로 확인한 가격을 입력하면 최저가 행이 표시됩니다.</p>
+  </header>
+
+  <div class="card">
+    <div class="row">
+      <label class="field-label">목적지</label>
+      <select id="destSelect">
+        <option value="KIX">오사카 KIX</option>
+        <option value="FUK">후쿠오카 FUK</option>
+        <option value="BKK">방콕 BKK</option>
+        <option value="DAD">다낭 DAD</option>
+        <option value="CTS">삿포로 CTS</option>
+        <option value="TPE">타이베이 TPE</option>
+        <option value="__custom">직접 입력...</option>
+      </select>
+    </div>
+    <div class="row" id="customDestRow" style="display:none;">
+      <label class="field-label">공항코드</label>
+      <input type="text" id="customDest" maxlength="3" placeholder="예: NRT">
+    </div>
+
+    <div class="row">
+      <label class="field-label">출발요일</label>
+      <div class="dow-group" id="depGroup"></div>
+    </div>
+    <div class="row">
+      <label class="field-label">복귀요일</label>
+      <div class="dow-group" id="retGroup"></div>
+    </div>
+    <div class="nights-note" id="nightsNote"></div>
+
+    <div class="row" style="margin-top:14px;">
+      <label class="field-label">탐색범위</label>
+      <input type="range" id="weeksRange" min="4" max="16" value="8" step="1">
+      <span class="weeks-val" id="weeksVal">8주</span>
+    </div>
+
+    <button class="gen-btn" id="genBtn">링크 생성</button>
+  </div>
+
+  <div class="card" id="resultsCard" style="display:none;">
+    <table>
+      <thead>
+        <tr><th>기간</th><th style="width:48px;"></th><th style="width:96px;">가격(원)</th></tr>
+      </thead>
+      <tbody id="resultsBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+var DOW = ['일','월','화','수','목','금','토'];
+var STORAGE_KEY = 'flighthunter.settings';
+
+var state = {
+  dest: 'KIX',
+  customDest: '',
+  depDow: 5,
+  retDow: 0,
+  weeks: 8
+};
+
+function loadState(){
+  try{
+    var raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) Object.assign(state, JSON.parse(raw));
+  }catch(e){}
+}
+function saveState(){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
+}
+
+function buildDowGroup(container, selectedDow, onSelect){
+  container.innerHTML = '';
+  DOW.forEach(function(label, i){
+    var btn = document.createElement('div');
+    btn.className = 'dow-btn' + (i === selectedDow ? ' on' : '');
+    btn.textContent = label;
+    btn.addEventListener('click', function(){ onSelect(i); });
+    container.appendChild(btn);
+  });
+}
+
+function renderDowGroups(){
+  buildDowGroup(document.getElementById('depGroup'), state.depDow, function(i){
+    state.depDow = i; saveState(); renderDowGroups();
+  });
+  buildDowGroup(document.getElementById('retGroup'), state.retDow, function(i){
+    state.retDow = i; saveState(); renderDowGroups();
+  });
+  var nights = (state.retDow - state.depDow + 7) % 7;
+  var note = nights === 0 ? '당일치기 일정이에요' : (nights + '박 ' + (nights + 1) + '일 일정이에요');
+  document.getElementById('nightsNote').textContent = note;
+}
+
+function currentDest(){
+  return state.dest === '__custom' ? (state.customDest || '').toUpperCase() : state.dest;
+}
+
+function fmtShort(d){ return (d.getMonth()+1) + '/' + d.getDate() + '(' + DOW[d.getDay()] + ')'; }
+function ymd(d){
+  var mm = ('0'+(d.getMonth()+1)).slice(-2), dd = ('0'+d.getDate()).slice(-2);
+  return '' + d.getFullYear() + mm + dd;
+}
+function nextDow(base, dow){
+  var d = new Date(base);
+  var diff = (dow - d.getDay() + 7) % 7;
+  d.setDate(d.getDate() + diff);
+  d.setHours(0,0,0,0);
+  return d;
+}
+
+function generate(){
+  var dest = currentDest();
+  if (!dest || dest.length !== 3){
+    alert('목적지 공항코드 3자리를 확인해주세요 (예: NRT)');
+    return;
+  }
+  var nights = (state.retDow - state.depDow + 7) % 7;
+  var today = new Date();
+  var firstDep = nextDow(today, state.depDow);
+  var body = document.getElementById('resultsBody');
+  body.innerHTML = '';
+
+  for (var i = 0; i < state.weeks; i++){
+    var dep = new Date(firstDep); dep.setDate(dep.getDate() + i*7);
+    var ret = new Date(dep); ret.setDate(ret.getDate() + nights);
+    var url = 'https://flight.naver.com/flights/international/ICN-' + dest + '-' + ymd(dep) + '/' + dest + '-ICN-' + ymd(ret) + '?adult=1&fareType=Y';
+
+    var tr = document.createElement('tr');
+
+    var tdDate = document.createElement('td');
+    tdDate.className = 'date-cell';
+    tdDate.textContent = fmtShort(dep) + ' ~ ' + fmtShort(ret);
+
+    var tdLink = document.createElement('td');
+    var a = document.createElement('a');
+    a.href = url; a.target = '_blank'; a.rel = 'noopener'; a.className = 'open-link'; a.textContent = '열기';
+    tdLink.appendChild(a);
+
+    var tdPrice = document.createElement('td');
+    var input = document.createElement('input');
+    input.type = 'number'; input.className = 'price-input'; input.placeholder = '가격';
+    input.addEventListener('input', highlightCheapest);
+    tdPrice.appendChild(input);
+
+    tr.appendChild(tdDate); tr.appendChild(tdLink); tr.appendChild(tdPrice);
+    body.appendChild(tr);
+  }
+  document.getElementById('resultsCard').style.display = 'block';
+}
+
+function highlightCheapest(){
+  var rows = Array.prototype.slice.call(document.querySelectorAll('#resultsBody tr'));
+  var min = Infinity;
+  rows.forEach(function(tr){
+    var v = parseFloat(tr.querySelector('.price-input').value);
+    if (!isNaN(v) && v < min) min = v;
+  });
+  rows.forEach(function(tr){
+    var v = parseFloat(tr.querySelector('.price-input').value);
+    tr.classList.toggle('cheapest', !isNaN(v) && v === min);
+  });
+}
+
+document.getElementById('destSelect').addEventListener('change', function(){
+  state.dest = this.value;
+  document.getElementById('customDestRow').style.display = (state.dest === '__custom') ? 'flex' : 'none';
+  saveState();
+});
+document.getElementById('customDest').addEventListener('input', function(){
+  state.customDest = this.value.toUpperCase();
+  saveState();
+});
+document.getElementById('weeksRange').addEventListener('input', function(){
+  state.weeks = parseInt(this.value, 10);
+  document.getElementById('weeksVal').textContent = state.weeks + '주';
+  saveState();
+});
+document.getElementById('genBtn').addEventListener('click', generate);
+
+loadState();
+document.getElementById('destSelect').value = state.dest;
+document.getElementById('customDest').value = state.customDest;
+document.getElementById('customDestRow').style.display = (state.dest === '__custom') ? 'flex' : 'none';
+document.getElementById('weeksRange').value = state.weeks;
+document.getElementById('weeksVal').textContent = state.weeks + '주';
+renderDowGroups();
+</script>
+</body>
+</html>
