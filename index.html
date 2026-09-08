@@ -79,14 +79,50 @@
   tr.cheapest td{ background:var(--green-dim); }
   tr.cheapest .price-cell{ color:var(--green); }
   .progress-note{ font-size:12px; color:var(--text-dim); margin-top:10px; text-align:center; }
+
+  .tab-bar{ display:flex; gap:6px; margin-bottom:14px; }
+  .tab-btn{
+    flex:1; padding:11px 0; text-align:center; background:var(--panel); border:1px solid var(--border);
+    border-radius:8px; color:var(--text-dim); font-size:14px; font-weight:600; cursor:pointer; font-family:inherit;
+  }
+  .tab-btn.active{ background:var(--amber-dim); border-color:var(--amber); color:var(--amber); }
+  .tab-panel{ display:none; }
+  .tab-panel.active{ display:block; }
+
+  .dest-info-title{ font-size:15px; font-weight:600; margin-bottom:14px; }
+  .dest-info-links{ display:flex; flex-direction:column; gap:8px; }
+  .info-link{
+    display:flex; align-items:center; gap:10px; background:var(--panel-2); border:1px solid var(--border);
+    border-radius:8px; padding:11px 12px; text-decoration:none; color:var(--text); font-size:14px;
+  }
+  .info-link:active{ transform:scale(0.99); }
+  .info-icon{ font-size:16px; }
+  .dest-info-note{ font-size:11px; color:var(--text-dim); margin-top:14px; line-height:1.5; }
+
+  .month-nav{ display:flex; align-items:center; justify-content:center; gap:18px; margin-bottom:14px; }
+  .month-nav-btn{
+    background:var(--panel-2); border:1px solid var(--border); color:var(--text);
+    width:32px; height:32px; border-radius:8px; font-size:16px; cursor:pointer; font-family:inherit;
+  }
+  .month-label{ font-family:'JetBrains Mono', monospace; font-size:15px; font-weight:700; min-width:44px; text-align:center; }
+
+  .seasonal-festival{
+    font-size:13px; line-height:1.6; color:var(--text); background:var(--panel-2);
+    border-radius:8px; padding:11px 12px; margin-bottom:12px;
+  }
+  .seasonal-festival-label{ font-size:11px; color:var(--amber); font-weight:700; margin-bottom:4px; display:block; }
+  .food-section-label{ font-size:11px; color:var(--text-dim); margin-bottom:8px; }
+  .food-tags{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:16px; }
+  .food-tag{ font-size:12px; background:var(--panel-2); border:1px solid var(--border); color:var(--text); padding:5px 10px; border-radius:999px; }
+  .no-data-note{ font-size:13px; color:var(--text-dim); text-align:center; padding:14px 0 18px; line-height:1.6; }
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
     <div class="eyebrow">ICN DEPARTURES</div>
-    <h1>요일조합 항공권 탐색기</h1>
-    <p class="sub">출발/복귀 요일을 직접 고르면 앞으로 몇 주 치 가격을 자동으로 조회해서 최저가 행을 표시해드려요. "열기"를 누르면 실제 네이버항공권 예약 페이지로 이동합니다.</p>
+    <h1>즉흥여행 탐색기</h1>
+    <p class="sub">항공권 최저가 자동조회와 여행지 정보(숙소·맛집·놀거리·시즌 추천)를 한 곳에서 확인하세요.</p>
   </header>
 
   <div class="card">
@@ -132,40 +168,171 @@
       <label class="field-label">공항코드</label>
       <input type="text" id="customDest" maxlength="3" placeholder="예: NRT">
     </div>
-
-    <div class="row">
-      <label class="field-label">출발요일</label>
-      <div class="dow-group" id="depGroup"></div>
-    </div>
-    <div class="row">
-      <label class="field-label">복귀요일</label>
-      <div class="dow-group" id="retGroup"></div>
-    </div>
-    <div class="nights-note" id="nightsNote"></div>
-
-    <div class="row" style="margin-top:14px;">
-      <label class="field-label">탐색범위</label>
-      <input type="range" id="weeksRange" min="4" max="16" value="8" step="1">
-      <span class="weeks-val" id="weeksVal">8주</span>
-    </div>
-
-    <button class="gen-btn" id="genBtn">링크 생성</button>
   </div>
 
-  <div class="card" id="resultsCard" style="display:none;">
-    <table>
-      <thead>
-        <tr><th>기간</th><th style="width:48px;"></th><th style="width:108px;">최저가</th></tr>
-      </thead>
-      <tbody id="resultsBody"></tbody>
-    </table>
-    <div class="progress-note" id="progressNote"></div>
+  <div class="tab-bar">
+    <button type="button" class="tab-btn active" id="tabBtnFlight" data-tab="flight">✈️ 항공권 탐색</button>
+    <button type="button" class="tab-btn" id="tabBtnInfo" data-tab="info">🗺️ 여행지 정보</button>
+  </div>
+
+  <div class="tab-panel active" id="tabFlight">
+    <div class="card">
+      <div class="row">
+        <label class="field-label">출발요일</label>
+        <div class="dow-group" id="depGroup"></div>
+      </div>
+      <div class="row">
+        <label class="field-label">복귀요일</label>
+        <div class="dow-group" id="retGroup"></div>
+      </div>
+      <div class="nights-note" id="nightsNote"></div>
+
+      <div class="row" style="margin-top:14px;">
+        <label class="field-label">탐색범위</label>
+        <input type="range" id="weeksRange" min="4" max="16" value="8" step="1">
+        <span class="weeks-val" id="weeksVal">8주</span>
+      </div>
+
+      <button class="gen-btn" id="genBtn">링크 생성</button>
+    </div>
+
+    <div class="card" id="resultsCard" style="display:none;">
+      <table>
+        <thead>
+          <tr><th>기간</th><th style="width:48px;"></th><th style="width:108px;">최저가</th></tr>
+        </thead>
+        <tbody id="resultsBody"></tbody>
+      </table>
+      <div class="progress-note" id="progressNote"></div>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="tabInfo">
+    <div class="card">
+      <div class="dest-info-title" id="destInfoTitle">여행지 정보</div>
+
+      <div class="month-nav">
+        <button type="button" class="month-nav-btn" id="prevMonthBtn">‹</button>
+        <span class="month-label" id="monthLabel">9월</span>
+        <button type="button" class="month-nav-btn" id="nextMonthBtn">›</button>
+      </div>
+      <div id="seasonalBody"></div>
+
+      <div class="dest-info-links">
+        <a class="info-link" id="lodgingLink" target="_blank" rel="noopener">
+          <span class="info-icon">🏠</span><span>숙소 찾아보기</span>
+        </a>
+        <a class="info-link" id="foodLink" target="_blank" rel="noopener">
+          <span class="info-icon">🍜</span><span>맛집 찾아보기</span>
+        </a>
+        <a class="info-link" id="activityLink" target="_blank" rel="noopener">
+          <span class="info-icon">🎡</span><span>놀거리 찾아보기</span>
+        </a>
+      </div>
+      <div class="dest-info-note">예매 전에도 자유롭게 둘러볼 수 있어요. 축제/제철음식은 매년 조금씩 달라질 수 있으니 정확한 일정은 방문 전 다시 확인해주세요.</div>
+    </div>
   </div>
 </div>
 
 <script>
 var DOW = ['일','월','화','수','목','금','토'];
 var STORAGE_KEY = 'flighthunter.settings';
+
+var DEST_INFO = {
+  NRT: '도쿄', KIX: '오사카', FUK: '후쿠오카', CTS: '삿포로', NGO: '나고야', OKA: '오키나와',
+  PEK: '베이징', PVG: '상하이', TAO: '칭다오', CAN: '광저우', CTU: '청두', XIY: '시안',
+  TPE: '타이베이', KHH: '가오슝',
+  DAD: '다낭', HAN: '하노이', SGN: '호치민', CXR: '나트랑', PQC: '푸꾸옥',
+  BKK: '방콕', CEB: '세부', GUM: '괌'
+};
+
+// 6개 인기 목적지 x 12개월 시즌 추천 (축제는 "보통 이맘때" 수준, 정확한 날짜는 매년 변동)
+var SEASONAL_INFO = {
+  KIX: {
+    1:{festival:'신년 하츠모데 인파(오사카성 주변 신사)', food:['텐동','오뎅','나베요리']},
+    2:{festival:'세츠분(입춘 콩뿌리기 행사), 매화 개화 시작', food:['굴 구이','아귀나베']},
+    3:{festival:'벚꽃 개화 시작(오사카성 공원)', food:['딸기','사쿠라모찌']},
+    4:{festival:'벚꽃 절정, 하나미 시즌', food:['죽순(타케노코)','삼치(사와라)']},
+    5:{festival:'골든위크 인파, 신사 축제 시즌 시작', food:['가다랑어(카츠오)','잠두콩']},
+    6:{festival:'장마철, 실내 관광지 추천', food:['은어(아유)','매실']},
+    7:{festival:'텐진마츠리(일본 3대 축제, 불꽃놀이)', food:['장어(우나기)','빙수(카키고리)']},
+    8:{festival:'스미요시마츠리, 여름 불꽃놀이 시즌', food:['소면','낫토']},
+    9:{festival:'선선해지는 초가을', food:['송이버섯','꽁치(삼마)']},
+    10:{festival:'단풍 시작(미노오 폭포 인근)', food:['밤','고구마']},
+    11:{festival:'단풍 절정', food:['게(카니)','복어(후구) 시즌 시작']},
+    12:{festival:'도톤보리·우메다 일루미네이션', food:['복어 나베','연말 소바']}
+  },
+  NRT: {
+    1:{festival:'신년 하츠모데(메이지 신궁 인파)', food:['오조니(떡국)','오뎅']},
+    2:{festival:'세츠분 행사(센소지 등)', food:['굴','나베요리']},
+    3:{festival:'벚꽃 개화 시작(메구로강)', food:['딸기','사쿠라모찌']},
+    4:{festival:'벚꽃 절정, 우에노공원 하나미', food:['죽순','산나물']},
+    5:{festival:'간다마츠리(격년), 골든위크', food:['가다랑어']},
+    6:{festival:'장마철', food:['매실','은어']},
+    7:{festival:'스미다가와 불꽃축제', food:['장어','빙수']},
+    8:{festival:'여름 불꽃놀이 절정, 코엔지 아와오도리', food:['소면','옥수수']},
+    9:{festival:'선선해지는 초가을', food:['꽁치(삼마)','밤']},
+    10:{festival:'단풍 시작', food:['고구마','버섯']},
+    11:{festival:'단풍 절정(롯폰기, 신주쿠교엔)', food:['게','나베요리 본격 시즌']},
+    12:{festival:'롯폰기힐즈·시부야 일루미네이션', food:['소바(토시코시소바)','복어']}
+  },
+  FUK: {
+    1:{festival:'다자이후 신사 새해 참배 인파', food:['모츠나베','명란젓']},
+    2:{festival:'매화 시즌(다자이후 텐만구)', food:['굴 구이(하카타 굴 오두막)']},
+    3:{festival:'벚꽃 개화 시작', food:['딸기']},
+    4:{festival:'벚꽃 절정(마이즈루공원)', food:['죽순','봄나물']},
+    5:{festival:'하카타돈타쿠 항구축제(일본 최대급)', food:['죽순']},
+    6:{festival:'장마철', food:['매실']},
+    7:{festival:'하카타 기온 야마카사(전통 가마 경주)', food:['장어']},
+    8:{festival:'여름 불꽃축제 시즌', food:['하카타 명물 빙수']},
+    9:{festival:'초가을', food:['꽁치']},
+    10:{festival:'단풍 시작', food:['명란젓 성수기','굴']},
+    11:{festival:'모츠나베 제철 본격화', food:['복어 시즌 시작']},
+    12:{festival:'하카타 일루미네이션', food:['모츠나베','복어']}
+  },
+  BKK: {
+    1:{festival:'건기 절정, 여행 최적기', food:['망고 시즌 시작']},
+    2:{festival:'차이나타운 춘절 행사', food:['두리안 초입']},
+    3:{festival:'더워지기 시작', food:['망고 절정','망고스틴']},
+    4:{festival:'송크란(태국 최대 물 축제)', food:['열대과일 절정기']},
+    5:{festival:'우기 시작 전 무더위', food:['두리안 절정']},
+    6:{festival:'우기 시즌', food:['망고스틴','람부탄']},
+    7:{festival:'우기', food:['열대과일 다양']},
+    8:{festival:'우기', food:['롱안']},
+    9:{festival:'우기, 베지테리언 페스티벌 준비기', food:['롱안','람부탄']},
+    10:{festival:'베지테리언 페스티벌(차이나타운)', food:['채식 요리']},
+    11:{festival:'러이끄라통(등불 축제)', food:['건기 시작, 신선한 해산물']},
+    12:{festival:'건기, 여행 성수기, 카운트다운 행사', food:['스트리트푸드 시즌 절정']}
+  },
+  DAD: {
+    1:{festival:'건기, 여행 최적기', food:['미꽝(다낭 명물국수)']},
+    2:{festival:'뗏(베트남 설) - 상점 휴무 많을 수 있음', food:['반쯩(설음식)']},
+    3:{festival:'다낭 국제불꽃축제 시즌 시작', food:['해산물 시즌']},
+    4:{festival:'불꽃축제 절정', food:['분짜']},
+    5:{festival:'더워지기 시작', food:['열대과일']},
+    6:{festival:'우기 전 무더위', food:['해산물']},
+    7:{festival:'여름 성수기', food:['째(디저트 음료)']},
+    8:{festival:'우기 시작', food:['열대과일 풍성']},
+    9:{festival:'우기', food:['해산물']},
+    10:{festival:'우기, 태풍 주의 시즌', food:['반쎄오']},
+    11:{festival:'우기 끝물', food:['미꽝']},
+    12:{festival:'건기 시작, 크리스마스 분위기', food:['해산물 나베류']}
+  },
+  TPE: {
+    1:{festival:'선선한 날씨, 여행 좋은 시기', food:['훠궈']},
+    2:{festival:'춘절(음력설) - 상점 휴무 많을 수 있음', food:['명절 음식']},
+    3:{festival:'벚꽃 시즌 시작(양명산)', food:['딸기']},
+    4:{festival:'벚꽃·봄꽃 절정', food:['죽순']},
+    5:{festival:'더워지기 시작', food:['망고 시즌 시작']},
+    6:{festival:'단오절(용선 축제)', food:['쫑즈(찹쌀 만두)']},
+    7:{festival:'무더위, 망고빙수 시즌', food:['망고빙수']},
+    8:{festival:'유령절(중원절) 전통행사', food:['열대과일']},
+    9:{festival:'중추절(월병·바베큐 문화)', food:['월병']},
+    10:{festival:'선선해지는 초가을', food:['훠궈 다시 인기']},
+    11:{festival:'양명산 억새 시즌', food:['우육면']},
+    12:{festival:'크리스마스 분위기, 온천 여행 시즌', food:['훠궈','온천 두부']}
+  }
+};
 
 var state = {
   dest: 'KIX',
@@ -174,6 +341,8 @@ var state = {
   retDow: 0,
   weeks: 8
 };
+
+var viewMonth = new Date().getMonth() + 1;
 
 function loadState(){
   try{
@@ -210,6 +379,41 @@ function renderDowGroups(){
 
 function currentDest(){
   return state.dest === '__custom' ? (state.customDest || '').toUpperCase() : state.dest;
+}
+
+function renderDestInfo(){
+  var code = currentDest();
+  var city = DEST_INFO[code] || code || '여행지';
+  document.getElementById('destInfoTitle').textContent = city + ' 여행 정보';
+
+  if (!code || code.length !== 3){
+    document.getElementById('lodgingLink').href = '#';
+    document.getElementById('foodLink').href = '#';
+    document.getElementById('activityLink').href = '#';
+    return;
+  }
+  var q = encodeURIComponent(city);
+  document.getElementById('lodgingLink').href = 'https://www.airbnb.co.kr/s/' + q + '/homes';
+  document.getElementById('foodLink').href = 'https://www.google.com/maps/search/?api=1&query=' + q + '+맛집';
+  document.getElementById('activityLink').href = 'https://www.google.com/maps/search/?api=1&query=' + q + '+가볼만한곳';
+}
+
+function renderSeasonalInfo(){
+  document.getElementById('monthLabel').textContent = viewMonth + '월';
+  var code = currentDest();
+  var body = document.getElementById('seasonalBody');
+  var data = SEASONAL_INFO[code];
+
+  if (!data){
+    body.innerHTML = '<div class="no-data-note">이 목적지는 아직 시즌 정보가 준비되지 않았어요.<br>필요하면 말씀해주세요, 추가해드릴게요.</div>';
+    return;
+  }
+  var entry = data[viewMonth];
+  var foodTags = entry.food.map(function(f){ return '<span class="food-tag">' + f + '</span>'; }).join('');
+  body.innerHTML =
+    '<div class="seasonal-festival"><span class="seasonal-festival-label">이맘때 볼거리</span>' + entry.festival + '</div>' +
+    '<div class="food-section-label">제철 음식</div>' +
+    '<div class="food-tags">' + foodTags + '</div>';
 }
 
 function fmtShort(d){ return (d.getMonth()+1) + '/' + d.getDate() + '(' + DOW[d.getDay()] + ')'; }
@@ -322,14 +526,28 @@ function highlightCheapest(){
   });
 }
 
+function switchTab(name){
+  var isFlight = name === 'flight';
+  document.getElementById('tabFlight').classList.toggle('active', isFlight);
+  document.getElementById('tabInfo').classList.toggle('active', !isFlight);
+  document.getElementById('tabBtnFlight').classList.toggle('active', isFlight);
+  document.getElementById('tabBtnInfo').classList.toggle('active', !isFlight);
+}
+document.getElementById('tabBtnFlight').addEventListener('click', function(){ switchTab('flight'); });
+document.getElementById('tabBtnInfo').addEventListener('click', function(){ switchTab('info'); });
+
 document.getElementById('destSelect').addEventListener('change', function(){
   state.dest = this.value;
   document.getElementById('customDestRow').style.display = (state.dest === '__custom') ? 'flex' : 'none';
   saveState();
+  renderDestInfo();
+  renderSeasonalInfo();
 });
 document.getElementById('customDest').addEventListener('input', function(){
   state.customDest = this.value.toUpperCase();
   saveState();
+  renderDestInfo();
+  renderSeasonalInfo();
 });
 document.getElementById('weeksRange').addEventListener('input', function(){
   state.weeks = parseInt(this.value, 10);
@@ -338,6 +556,15 @@ document.getElementById('weeksRange').addEventListener('input', function(){
 });
 document.getElementById('genBtn').addEventListener('click', generate);
 
+document.getElementById('prevMonthBtn').addEventListener('click', function(){
+  viewMonth = viewMonth - 1; if (viewMonth < 1) viewMonth = 12;
+  renderSeasonalInfo();
+});
+document.getElementById('nextMonthBtn').addEventListener('click', function(){
+  viewMonth = viewMonth + 1; if (viewMonth > 12) viewMonth = 1;
+  renderSeasonalInfo();
+});
+
 loadState();
 document.getElementById('destSelect').value = state.dest;
 document.getElementById('customDest').value = state.customDest;
@@ -345,6 +572,8 @@ document.getElementById('customDestRow').style.display = (state.dest === '__cust
 document.getElementById('weeksRange').value = state.weeks;
 document.getElementById('weeksVal').textContent = state.weeks + '주';
 renderDowGroups();
+renderDestInfo();
+renderSeasonalInfo();
 
 if ('serviceWorker' in navigator){
   window.addEventListener('load', function(){
