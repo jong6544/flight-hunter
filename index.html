@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
 <title>요일조합 항공권 탐색기</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#0e1117">
+<link rel="icon" href="/icons/icon-192.png">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="항공권탐색기">
+<meta name="mobile-web-app-capable" content="yes">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -85,12 +93,38 @@
     <div class="row">
       <label class="field-label">목적지</label>
       <select id="destSelect">
-        <option value="KIX">오사카 KIX</option>
-        <option value="FUK">후쿠오카 FUK</option>
-        <option value="BKK">방콕 BKK</option>
-        <option value="DAD">다낭 DAD</option>
-        <option value="CTS">삿포로 CTS</option>
-        <option value="TPE">타이베이 TPE</option>
+        <optgroup label="일본">
+          <option value="NRT">도쿄(나리타) NRT</option>
+          <option value="KIX">오사카 KIX</option>
+          <option value="FUK">후쿠오카 FUK</option>
+          <option value="CTS">삿포로 CTS</option>
+          <option value="NGO">나고야 NGO</option>
+          <option value="OKA">오키나와 OKA</option>
+        </optgroup>
+        <optgroup label="중국">
+          <option value="PEK">베이징 PEK</option>
+          <option value="PVG">상하이 PVG</option>
+          <option value="TAO">칭다오 TAO</option>
+          <option value="CAN">광저우 CAN</option>
+          <option value="CTU">청두 CTU</option>
+          <option value="XIY">시안 XIY</option>
+        </optgroup>
+        <optgroup label="대만">
+          <option value="TPE">타이베이 TPE</option>
+          <option value="KHH">가오슝 KHH</option>
+        </optgroup>
+        <optgroup label="베트남">
+          <option value="DAD">다낭 DAD</option>
+          <option value="HAN">하노이 HAN</option>
+          <option value="SGN">호치민 SGN</option>
+          <option value="CXR">나트랑 CXR</option>
+          <option value="PQC">푸꾸옥 PQC</option>
+        </optgroup>
+        <optgroup label="기타 인기">
+          <option value="BKK">방콕 BKK</option>
+          <option value="CEB">세부 CEB</option>
+          <option value="GUM">괌 GUM</option>
+        </optgroup>
         <option value="__custom">직접 입력...</option>
       </select>
     </div>
@@ -311,6 +345,12 @@ document.getElementById('customDestRow').style.display = (state.dest === '__cust
 document.getElementById('weeksRange').value = state.weeks;
 document.getElementById('weeksVal').textContent = state.weeks + '주';
 renderDowGroups();
+
+if ('serviceWorker' in navigator){
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register('/sw.js').catch(function(e){ console.log('SW 등록 실패', e); });
+  });
+}
 </script>
 </body>
 </html>
