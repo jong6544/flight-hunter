@@ -64,12 +64,13 @@
   td{ padding:9px 4px; border-bottom:1px solid var(--border); font-size:13px; vertical-align:middle; }
   .date-cell{ font-family:'JetBrains Mono', monospace; }
   .open-link{ color:var(--amber); text-decoration:none; font-family:'JetBrains Mono', monospace; font-size:12px; }
-  .price-input{
-    width:100%; background:var(--panel-2); border:1px solid var(--border); color:var(--text);
-    border-radius:6px; padding:7px 8px; font-family:'JetBrains Mono', monospace; font-size:13px;
-  }
+  .price-cell{ font-family:'JetBrains Mono', monospace; font-size:13px; color:var(--text-dim); }
+  .price-cell.ok{ color:var(--text); font-weight:700; }
+  .price-cell.fail{ color:var(--text-dim); }
+  .retry-link{ color:var(--amber); text-decoration:none; font-size:11px; margin-left:6px; }
   tr.cheapest td{ background:var(--green-dim); }
-  tr.cheapest .price-input{ border-color:var(--green); color:var(--green); }
+  tr.cheapest .price-cell{ color:var(--green); }
+  .progress-note{ font-size:12px; color:var(--text-dim); margin-top:10px; text-align:center; }
 </style>
 </head>
 <body>
@@ -77,7 +78,7 @@
   <header>
     <div class="eyebrow">ICN DEPARTURES</div>
     <h1>요일조합 항공권 탐색기</h1>
-    <p class="sub">출발/복귀 요일을 직접 고르면 앞으로 몇 주 치 네이버항공권 검색 링크를 만들어드려요. 링크에서 눈으로 확인한 가격을 입력하면 최저가 행이 표시됩니다.</p>
+    <p class="sub">출발/복귀 요일을 직접 고르면 앞으로 몇 주 치 가격을 자동으로 조회해서 최저가 행을 표시해드려요. "열기"를 누르면 실제 네이버항공권 예약 페이지로 이동합니다.</p>
   </header>
 
   <div class="card">
@@ -120,10 +121,11 @@
   <div class="card" id="resultsCard" style="display:none;">
     <table>
       <thead>
-        <tr><th>기간</th><th style="width:48px;"></th><th style="width:96px;">가격(원)</th></tr>
+        <tr><th>기간</th><th style="width:48px;"></th><th style="width:108px;">최저가</th></tr>
       </thead>
       <tbody id="resultsBody"></tbody>
     </table>
+    <div class="progress-note" id="progressNote"></div>
   </div>
 </div>
 
@@ -189,6 +191,8 @@ function nextDow(base, dow){
   return d;
 }
 
+function sleep(ms){ return new Promise(function(resolve){ setTimeout(resolve, ms); }); }
+
 function generate(){
   var dest = currentDest();
   if (!dest || dest.length !== 3){
@@ -204,9 +208,11 @@ function generate(){
   for (var i = 0; i < state.weeks; i++){
     var dep = new Date(firstDep); dep.setDate(dep.getDate() + i*7);
     var ret = new Date(dep); ret.setDate(ret.getDate() + nights);
-    var url = 'https://flight.naver.com/flights/international/ICN-' + dest + '-' + ymd(dep) + '/' + dest + '-ICN-' + ymd(ret) + '?adult=1&fareType=Y';
+    var depYmd = ymd(dep), retYmd = ymd(ret);
+    var url = 'https://flight.naver.com/flights/international/ICN-' + dest + '-' + depYmd + '/' + dest + '-ICN-' + retYmd + '?adult=1&fareType=Y';
 
     var tr = document.createElement('tr');
+    tr.dataset.dep = depYmd; tr.dataset.ret = retYmd; tr.dataset.dest = dest;
 
     var tdDate = document.createElement('td');
     tdDate.className = 'date-cell';
@@ -218,26 +224,66 @@ function generate(){
     tdLink.appendChild(a);
 
     var tdPrice = document.createElement('td');
-    var input = document.createElement('input');
-    input.type = 'number'; input.className = 'price-input'; input.placeholder = '가격';
-    input.addEventListener('input', highlightCheapest);
-    tdPrice.appendChild(input);
+    var span = document.createElement('span');
+    span.className = 'price-cell';
+    span.textContent = '대기중';
+    tdPrice.appendChild(span);
 
     tr.appendChild(tdDate); tr.appendChild(tdLink); tr.appendChild(tdPrice);
     body.appendChild(tr);
   }
   document.getElementById('resultsCard').style.display = 'block';
+  fetchAllPrices();
+}
+
+async function fetchOneRow(tr){
+  var cell = tr.querySelector('.price-cell');
+  cell.className = 'price-cell';
+  cell.textContent = '조회중…';
+  delete cell.dataset.price;
+  try{
+    var url = '/api/search?dep=ICN&dest=' + tr.dataset.dest + '&depDate=' + tr.dataset.dep + '&retDate=' + tr.dataset.ret;
+    var resp = await fetch(url);
+    var data = await resp.json();
+    if (data && typeof data.price === 'number'){
+      cell.textContent = data.price.toLocaleString() + '원';
+      cell.classList.add('ok');
+      cell.dataset.price = data.price;
+    } else {
+      cell.textContent = '확인 실패';
+      cell.classList.add('fail');
+      var retry = document.createElement('a');
+      retry.href = '#'; retry.className = 'retry-link'; retry.textContent = '재조회';
+      retry.addEventListener('click', function(e){ e.preventDefault(); fetchOneRow(tr); });
+      cell.appendChild(retry);
+    }
+  }catch(e){
+    cell.textContent = '오류';
+    cell.classList.add('fail');
+  }
+  highlightCheapest();
+}
+
+async function fetchAllPrices(){
+  var rows = Array.prototype.slice.call(document.querySelectorAll('#resultsBody tr'));
+  var note = document.getElementById('progressNote');
+  for (var i = 0; i < rows.length; i++){
+    note.textContent = '가격 조회 중… (' + (i+1) + '/' + rows.length + ')';
+    await fetchOneRow(rows[i]);
+    if (i < rows.length - 1) await sleep(500);
+  }
+  note.textContent = '조회 완료';
 }
 
 function highlightCheapest(){
   var rows = Array.prototype.slice.call(document.querySelectorAll('#resultsBody tr'));
   var min = Infinity;
   rows.forEach(function(tr){
-    var v = parseFloat(tr.querySelector('.price-input').value);
+    var v = parseFloat(tr.querySelector('.price-cell').dataset.price);
     if (!isNaN(v) && v < min) min = v;
   });
   rows.forEach(function(tr){
-    var v = parseFloat(tr.querySelector('.price-input').value);
+    var v = parseFloat(tr.querySelector('.price-cell').dataset.price);
     tr.classList.toggle('cheapest', !isNaN(v) && v === min);
   });
 }
